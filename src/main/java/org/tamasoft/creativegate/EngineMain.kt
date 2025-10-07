@@ -1,6 +1,7 @@
 package org.tamasoft.creativegate
 
 import net.kyori.adventure.text.TextComponent
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.Block
@@ -213,8 +214,8 @@ class EngineMain : Listener {
                 player.sendMessage(TxtUtil.parse("<b>You must name the $reqMaterial before creating a gate with it."))
                 return
             }
-            val customNameTextComponent = currentItemMeta.displayName() as TextComponent
-            val networkId = TxtUtil.stripColor(customNameTextComponent.content())
+
+            val networkId = PlainTextComponentSerializer.plainText().serialize(currentItemMeta.displayName()!!)
 
             val gateFloodInfo: FloodUtil.FloodInfo? = FloodUtil.getGateFloodInfo(clickedBlock, event.blockFace)
             if (gateFloodInfo == null) {
