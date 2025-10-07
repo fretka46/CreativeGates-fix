@@ -1,0 +1,39 @@
+name: CreativeGate
+version: '0.1'
+main: org.tamasoft.creativegate.CreativeGate
+api-version: 1.19
+prefix: "[CreativeGate]"
+authors: [ Error110 ]
+description: A plugin that allows you to create teleportation gates without running a single command
+
+permissions:
+  CreativeGates.1:
+    description: Allows the player to use the gates
+    default: true
+  CreativeGates.2:
+    description: Allows the player to use the gates
+    default: op
+  CreativeGates.3:
+    description: Allows the player to use the gates
+    default: op
+  CreativeGates.4:
+    description: Allows the player to use the gates
+    default: op
+  CreativeGates.5:
+    description: Allows the player to use the gates
+    default: op
+  CreativeGates.6:
+    description: Allows the player to use the gates
+    default: op
+  CreativeGates.7:
+    description: Allows the player to use the gates
+    default: op
+  CreativeGates.8:
+    description: Allows the player to use the gates
+    default: op
+  CreativeGates.9:
+    description: Allows the player to use the gates
+    default: op
+  CreativeGates.10:
+    description: Allows the player to use the gates
+    default: op
