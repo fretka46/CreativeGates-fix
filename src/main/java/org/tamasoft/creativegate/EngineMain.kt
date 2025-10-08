@@ -1,7 +1,9 @@
 package org.tamasoft.creativegate
 
-import net.kyori.adventure.text.TextComponent
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
+import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.Block
@@ -26,7 +28,7 @@ import org.tamasoft.creativegate.teleport.Heading
 import org.tamasoft.creativegate.util.*
 import java.util.*
 import java.util.stream.Collectors
-import kotlin.collections.HashSet
+
 
 class EngineMain : Listener {
 
@@ -116,8 +118,7 @@ class EngineMain : Listener {
 
         // ... and the gate has enter enabled ...
         if (!gate.enterEnabled) {
-            val message = TxtUtil.parse("<i>This gate has enter disabled.")
-            player.sendMessage(message)
+            TxtUtil.sendTranslation(player, CreativeGate.configuration.gateEnterDisabledMessage)
             return
         }
 
@@ -211,7 +212,9 @@ class EngineMain : Listener {
             val currentItemMeta = currentItem.itemMeta
             if (!currentItemMeta.hasDisplayName()) {
                 val reqMaterial = TxtUtil.getMaterialName(material)
-                player.sendMessage(TxtUtil.parse("<b>You must name the $reqMaterial before creating a gate with it."))
+
+                val tagResolver: Array<TagResolver> = arrayOf<TagResolver>(Placeholder.unparsed("reqMaterial", reqMaterial))
+                TxtUtil.sendTranslation(player, CreativeGate.configuration.mustNameItemMessage, tagResolver)
                 return
             }
 
@@ -219,10 +222,8 @@ class EngineMain : Listener {
 
             val gateFloodInfo: FloodUtil.FloodInfo? = FloodUtil.getGateFloodInfo(clickedBlock, event.blockFace)
             if (gateFloodInfo == null) {
-                player.sendMessage(TxtUtil.parse(
-                    "<b>There is no frame for the gate, or it's too big.",
-                    TxtUtil.getMaterialName(material)
-                ))
+                val tagResolver = arrayOf<TagResolver>(Placeholder.unparsed("material", TxtUtil.getMaterialName(material)))
+                TxtUtil.sendTranslation(player, CreativeGate.configuration.noFrameOrTooBigMessage, tagResolver)
                 return
             }
             val gateOrientation = gateFloodInfo.gateOrientation
@@ -232,7 +233,8 @@ class EngineMain : Listener {
             val materialCounts: Map<Material, Long> = MaterialCountUtil.count(frameBlocks)
             if (!MaterialCountUtil.has(materialCounts, CreativeGate.configuration.blocksRequired)) {
                 val reqBlocks = MaterialCountUtil.desc(CreativeGate.configuration.blocksRequired)
-                player.sendMessage(TxtUtil.parse("<b>The frame must contain $reqBlocks<b>."))
+                val tagResolver = arrayOf<TagResolver>(Placeholder.unparsed("blocks", reqBlocks))
+                TxtUtil.sendTranslation(player, CreativeGate.configuration.frameMustContainMessage, tagResolver)
                 return
             }
 
@@ -280,7 +282,11 @@ class EngineMain : Listener {
                 if (isGateNearby(clickedBlock)) {
                     val reqMaterial = TxtUtil.getMaterialName(material)
                     val blockMaterial = TxtUtil.getMaterialName(clickedBlock.type)
-                    player.sendMessage(TxtUtil.parse("<i>You use the $reqMaterial on the $blockMaterial but there seem to be no gate."))
+                    val tagResolver = arrayOf<TagResolver>(
+                        Placeholder.unparsed("reqMaterial", reqMaterial),
+                        Placeholder.unparsed("blockMaterial", blockMaterial)
+                    )
+                    TxtUtil.sendTranslation(player, CreativeGate.configuration.noGateMessage, tagResolver)
                     return
                 } else {
                     return
@@ -293,44 +299,55 @@ class EngineMain : Listener {
 
             val reqMaterial = TxtUtil.getMaterialName(material)
             val blockMaterial = TxtUtil.getMaterialName(clickedBlock.type)
-            player.sendMessage("<i>You use the $reqMaterial on the $blockMaterial...")
+            val tagResolver = arrayOf<TagResolver>(
+                Placeholder.unparsed("reqmaterial", reqMaterial),
+                Placeholder.unparsed("blockmaterial", blockMaterial)
+            )
+            TxtUtil.sendTranslation(player, CreativeGate.configuration.gateUsingMessage, tagResolver)
 
             for (currentGate in currentGates) {
                 if (currentGate.restricted) {
                     if (currentGate.isCreator(player)) {
-                        player.sendMessage(TxtUtil.parse("<i>... the gate is restricted but you are the creator ..."))
+                        TxtUtil.sendTranslation(player, CreativeGate.configuration.gateRestrictedCreatorMessage)
                     } else {
-                        player.sendMessage(TxtUtil.parse("<b>... the gate is restricted and you are not the creator."))
+                        TxtUtil.sendTranslation(player, CreativeGate.configuration.gateRestrictedMessage)
                         return
                     }
                 }
                 if (material == CreativeGate.configuration.materialInspect) {
-                    player.sendMessage(TxtUtil.parse("<i>Some gate inscriptions are revealed:"))
-                    player.sendMessage(TxtUtil.parse("<k>network: <v>$currentGate.networkId"))
-                    player.sendMessage(TxtUtil.parse("<k>gates: <v>$currentGate.gateChain.size + 1"))
+                    TxtUtil.sendTranslation(player, CreativeGate.configuration.gateInspect1Message)
+                    var tagResolver = arrayOf<TagResolver>(Placeholder.unparsed("networkid", currentGate.networkId))
+                    TxtUtil.sendTranslation(player, CreativeGate.configuration.gateInspect2Message, tagResolver)
+                    tagResolver = arrayOf<TagResolver>(Placeholder.unparsed("chainsize", (currentGate.calcGatesInChainAfterThis().size + 1).toString()))
+                    TxtUtil.sendTranslation(player, CreativeGate.configuration.gateInspect3Message, tagResolver)
                     GatesCollector.getCreator(currentGate)?.let {
-                        player.sendMessage(TxtUtil.parse("<k>creator: <v>${it.toString()}"))
+                        tagResolver = arrayOf<TagResolver>(Placeholder.unparsed("creatorname", Bukkit.getOfflinePlayer(it).name ?: "unknown"))
+                        TxtUtil.sendTranslation(player, CreativeGate.configuration.gateInspect4Message, tagResolver)
                     }
                 } else if (material == CreativeGate.configuration.materialSecret) {
                     val creator = currentGate.isCreator(player)
                     if (creator) {
                         val secret: Boolean = !currentGate.restricted
                         currentGate.restricted = secret
-                        player.sendMessage(if (secret) TxtUtil.parse("<h>Only you <i>can read the gate inscriptions now.") else TxtUtil.parse("<h>Anyone <i>can read the gate inscriptions now."))
+                        if (secret)
+                            TxtUtil.sendTranslation(player, CreativeGate.configuration.onlyYouCanReadMessage)
+                        else
+                            TxtUtil.sendTranslation(player, CreativeGate.configuration.everyoneCanReadMessage)
                     } else {
-                        player.sendMessage(TxtUtil.parse(
-                            "<i>It seems <h>only the gate creator <i>can change inscription readability.",
-                            TxtUtil.getMaterialName(material),
-                            TxtUtil.getMaterialName(clickedBlock.type)
-                        ))
+                        TxtUtil.sendTranslation(player, CreativeGate.configuration.onlyOwnerCanChangeMessage)
                     }
                 } else if (material == CreativeGate.configuration.materialMode) {
                     currentGate.toggleMode()
                     val enter: String =
-                        if (currentGate.enterEnabled) TxtUtil.parse("<g>enter enabled") else TxtUtil.parse("<b>enter disabled")
+                        if (currentGate.enterEnabled) CreativeGate.configuration.enterEnabledMessage else CreativeGate.configuration.enterDisabledMessage
                     val exit: String =
-                        if (currentGate.exitEnabled) TxtUtil.parse("<g>exit enabled") else TxtUtil.parse("<b>exit disabled")
-                    player.sendMessage(TxtUtil.parse("<i>The gate now has $enter <i>and $exit<i>."))
+                        if (currentGate.exitEnabled) CreativeGate.configuration.exitEnabledMessage else CreativeGate.configuration.exitDisabledMessage
+
+                    var tagResolver = arrayOf<TagResolver>(
+                        Placeholder.unparsed("enter", enter),
+                        Placeholder.unparsed("exit", exit)
+                    )
+                    TxtUtil.sendTranslation(player, CreativeGate.configuration.gateNowHasMessage, tagResolver)
                 }
             }
         }

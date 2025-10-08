@@ -126,8 +126,7 @@ class Gate() {
                 }
             }
         }
-        message = TxtUtil.parse("<i>This gate does not seem to lead anywhere.")
-        player.sendMessage(message)
+        TxtUtil.sendTranslation(player, CreativeGate.configuration.gateNoDestinationMessage)
     }
 
     fun calcGatesInChainAfterThis() : List<Gate?> {
